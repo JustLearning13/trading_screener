@@ -1,0 +1,30 @@
+# Ignore compiled binaries
+bin/
+obj/
+*.exe
+*.dll
+
+# Ignore user-specific files
+*.user
+*.suo
+
+# Ignore sensitive config
+appsettings.json
+secrets.json
+config/
+
+
+# Compiled Python files
+__pycache__/
+*.py[cod]
+
+# Visual Studio build artifacts
+bin/
+obj/
+.vs/
+*.exe
+*.dll
+*.pdb
+
+# CSV and data files (large or sensitive)
+*.csv
