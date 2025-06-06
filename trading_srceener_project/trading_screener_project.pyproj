@@ -5,7 +5,7 @@
     <ProjectGuid>a684f86d-4e96-45cd-8912-e8d8a437ebc9</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>utils\get_price_history.py</StartupFile>
+    <StartupFile>utils\update_price_history.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -25,20 +25,27 @@
     <Compile Include="analyse_industry.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="utils\get_recent_price_history.py" />
+    <Compile Include="utils\update_price_history.py" />
     <Compile Include="utils\get_price_history.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="utils\get_all_tickers.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="config.py">
+    <Compile Include="config\config.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="data\" />
-    <Folder Include="firters\" />
+    <Folder Include="filters\" />
+    <Folder Include="config\" />
     <Folder Include="utils\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="data\all_tickers.csv" />
+    <Content Include="data\price_history.csv" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
