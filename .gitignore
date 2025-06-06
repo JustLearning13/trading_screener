@@ -28,3 +28,5 @@ obj/
 
 # CSV and data files (large or sensitive)
 *.csv
+/trading_srceener_project/utils/get_recent_price_history.py
+/trading_srceener_project/config.py
