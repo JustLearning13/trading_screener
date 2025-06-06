@@ -4,7 +4,7 @@ import time
 from config import FMP_API_KEY
 from tqdm import tqdm  # progress bar
 
-# ------------------------- CONFIG -------------------------
+# SHOULD GO INTO ---------- CONFIG -------------------------
 API_LIST_URL = "https://financialmodelingprep.com/api/v3/stock/list"
 API_PROFILE_URL = "https://financialmodelingprep.com/api/v3/profile"
 OUTPUT_FILE = "all_tickers.csv"
