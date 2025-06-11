@@ -5,7 +5,7 @@
     <ProjectGuid>a684f86d-4e96-45cd-8912-e8d8a437ebc9</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>testing.py</StartupFile>
+    <StartupFile>utils\get_price_history.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -39,7 +39,6 @@
     <Compile Include="utils\plot_top_trending_sectors.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="utils\update_price_history.py" />
     <Compile Include="utils\get_price_history.py">
       <SubType>Code</SubType>
     </Compile>
