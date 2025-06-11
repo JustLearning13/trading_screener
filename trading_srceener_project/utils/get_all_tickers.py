@@ -26,7 +26,7 @@ def fetch_all_us_tickers():
 
     data = response.json()
     df = pd.DataFrame(data)
-    print("Columns returned from FMP:", df.columns.tolist())
+    print("Returned from FMP:", df.columns.tolist())
 
     # Keep only major exchanges
     df = df[df['exchangeShortName'].isin(EXCHANGES)]
