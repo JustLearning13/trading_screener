@@ -5,7 +5,7 @@
     <ProjectGuid>a684f86d-4e96-45cd-8912-e8d8a437ebc9</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>utils\get_all_tickers.py</StartupFile>
+    <StartupFile>testing.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -30,6 +30,9 @@
     </Compile>
     <Compile Include="filters\breakout_scanner.py" />
     <Compile Include="filters\precompute_metrics.py" />
+    <Compile Include="testing.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="utils\get_recent_price_history.py">
       <SubType>Code</SubType>
     </Compile>

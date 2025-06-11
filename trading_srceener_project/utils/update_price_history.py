@@ -5,15 +5,15 @@ from datetime import timedelta
 from tqdm import tqdm
 import time
 
+from config.config import SLEEP_BETWEEN_CALLS # Pause to avoid getting rate-limited
+from config.config import BATCH_SAVE_SIZE # Save interim results every N tickers
+
 PRICE_HISTORY_FILE = "data/price_history.csv"
 TICKER_FILE = "data/all_tickers.csv"
-SLEEP_TIME = 0.4
-BATCH_SAVE_EVERY = 100
 
+# Read the existing price history and return a dict of {ticker: last_date}.
 def get_last_dates():
-    """
-    Read the existing price history and return a dict of {ticker: last_date}.
-    """
+
     if not os.path.exists(PRICE_HISTORY_FILE):
         return {}
 
@@ -21,10 +21,9 @@ def get_last_dates():
     last_dates = df.groupby("Ticker")["Date"].max().to_dict()
     return last_dates
 
+# Fetch new history starting from the day after the last known date
 def fetch_new_history(ticker, start_date):
-    """
-    Fetch new history starting from the day after the last known date.
-    """
+ 
     try:
         start_date = start_date + timedelta(days=1)
         t = yf.Ticker(ticker)
@@ -59,12 +58,12 @@ def main():
         if new_data is not None:
             updates.append(new_data)
 
-        if (i + 1) % BATCH_SAVE_EVERY == 0 and updates:
+        if (i + 1) % BATCH_SAVE_SIZE == 0 and updates:
             combined = pd.concat(updates)
             combined.to_csv(PRICE_HISTORY_FILE, mode='a', header=False, index=False)
             updates.clear()
 
-        time.sleep(SLEEP_TIME)
+        time.sleep(SLEEP_BETWEEN_CALLS)
 
     if updates:
         combined = pd.concat(updates)
