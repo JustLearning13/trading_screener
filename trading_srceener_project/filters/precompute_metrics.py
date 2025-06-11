@@ -1,81 +1,85 @@
-﻿from tqdm import tqdm
+﻿# precompute_filtered_metrics.py
+
 import pandas as pd
 import yfinance as yf
-import numpy as np
-import time
+from tqdm import tqdm
 
-
-# Configuration
-min_price = 5.0
+# === CONFIGURATION ===
+min_price = 5.00
 min_volume = 100_000
 min_market_cap = 100_000_000
-ma_periods = [20, 50, 150, 200]
-ma_slope_check = 50  # Only apply slope filter to MA50
+ma_periods = [50, 200]  # moving averages of interest
 
-# Load tickers
-df = pd.read_csv("all_tickers.csv")
-tickers = df["Ticker"].dropna().unique().tolist()
+# === Load trend slope files for filtering ===
+sector_slopes = pd.read_csv("data/sector_slopes.csv")
+industry_slopes = pd.read_csv("data/industry_slopes.csv")
 
-# Output
+# Filter only sectors and industries with positive MA50 slope
+uptrending_sectors = set(sector_slopes[sector_slopes["Slope"] > 0]["Sector"])
+uptrending_industries = set(industry_slopes[industry_slopes["Slope"] > 0]["Industry"])
+
+# === Load ticker base list ===
+all_tickers = pd.read_csv("data/all_tickers.csv")
+
+# === Filter only those in uptrending sectors & industries ===
+filtered = all_tickers[
+    (all_tickers["Sector"].isin(uptrending_sectors)) &
+    (all_tickers["Industry"].isin(uptrending_industries))
+].dropna(subset=["Ticker"]).copy()
+
+print(f"🎯 {len(filtered)} tickers belong to uptrending sectors and industries.")
+
+# === Result storage ===
 results = []
 
-# Process each ticker with progress bar
-for symbol in tqdm(tickers, desc="Processing tickers"):
+# === Iterate over filtered tickers ===
+for _, row in tqdm(filtered.iterrows(), total=len(filtered), desc="Precomputing metrics"):
+    symbol = row["Ticker"]
     try:
-        t = yf.Ticker(symbol)
-        info = t.info
+        try:
+            t = yf.Ticker(symbol)
+            info = t.info
 
-        # Basic filters
-        price = info.get("regularMarketPrice", 0)
-        volume = info.get("volume", 0)
+            # 🧱 Skip if we got no info (bad or delisted ticker)
+            if not info or "regularMarketPrice" not in info:
+                continue
+
+        except Exception as e:
+            print(f"⚠️ {symbol}: Error retrieving info - {e}")
+            continue
+        price = info.get("previousClose", 0)
+        volume = info.get("averageVolume", 0)
         market_cap = info.get("marketCap", 0)
 
-        if price < min_price or volume < min_volume or (market_cap and market_cap < min_market_cap):
+        if price < min_price or volume < min_volume or market_cap < min_market_cap:
             continue
 
-        # Historical data
         hist = t.history(period="1y")
-        if hist.empty or len(hist) < max(ma_periods) + 5:
+        if hist.empty:
             continue
 
-        close_prices = hist["Close"]
+        ma_data = {}
+        for p in ma_periods:
+            if len(hist) >= p:
+                ma = hist["Close"].tail(p).mean()
+                ma_data[f"MA{p}"] = round(ma, 2)
+            else:
+                ma_data[f"MA{p}"] = None
 
-        ma_values = {}
-        ma_slopes = {}
-
-        for period in ma_periods:
-            ma = close_prices.rolling(window=period).mean()
-            ma_values[f"MA{period}"] = ma.iloc[-1]
-
-            # Compute slope for selected MA period
-            if period == ma_slope_check:
-                recent_ma = ma.dropna().tail(10)
-                if len(recent_ma) < 2:
-                    break
-                x = np.arange(len(recent_ma))
-                y = recent_ma.values
-                slope, _ = np.polyfit(x, y, 1)
-                ma_slopes[f"MA{period}_slope"] = slope
-
-                # Filter out downward slope
-                if slope < 0:
-                    break
-
-        else:
+        if price > ma_data["MA50"] and price > ma_data["MA200"]:
             results.append({
                 "Ticker": symbol,
-                "Price": price,
-                "Volume": volume,
+                "Sector": row["Sector"],
+                "Industry": row["Industry"],
                 "MarketCap": market_cap,
-                **ma_values,
-                **ma_slopes
+                "Close": round(price, 2),
+                **ma_data
             })
 
-    except Exception as e:
+    except Exception:
         continue
 
-# Save results
-output_df = pd.DataFrame(results)
-output_df.to_csv("precomputed_metrics.csv", index=False)
-
-
+# === Save result ===
+df_out = pd.DataFrame(results)
+df_out.to_csv("data/precomputed_metrics.csv", index=False)
+print(f"✅ Saved {len(df_out)} filtered tickers to precomputed_metrics.csv")

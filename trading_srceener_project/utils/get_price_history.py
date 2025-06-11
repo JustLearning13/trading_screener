@@ -2,14 +2,16 @@
 import time
 import pandas as pd
 import yfinance as yf
+
+from config.config import HISTORICAL_PERIOD 
+from config.config import SLEEP_BETWEEN_CALLS
+
 from tqdm import tqdm  # For a progress bar
 
 # ------------------------ CONFIGURATION ------------------------
 INPUT_CSV = "data/all_tickers.csv"       # Your master list of tickers
 OUTPUT_FILE = "data/price_history.csv"   # File to store all historical price data
-YEARS_BACK = 1                           # How far back you want to fetch history
 SAVE_EVERY_N = 100                       # Save interim results every N tickers
-SLEEP_BETWEEN_CALLS = 0.4                # Delay to avoid hitting API limits
 # ---------------------------------------------------------------
 
 def load_existing_tickers():
@@ -42,7 +44,7 @@ def fetch_history(ticker):
     """
     try:
         t = yf.Ticker(ticker)
-        hist = t.history(period=f"{YEARS_BACK}y", interval="1d")
+        hist = t.history(period=HISTORICAL_PERIOD, interval="1d")
 
         if hist.empty:
             return None

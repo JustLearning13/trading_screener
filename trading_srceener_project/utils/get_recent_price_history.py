@@ -1,4 +1,4 @@
-
+﻿
 import pandas as pd
 
 # Load the large file in chunks
@@ -24,6 +24,6 @@ recent_df = recent_df.sort_values(by=["Ticker", "Date"])
 # Save to new trimmed file
 recent_df.to_csv(output, index=False)
 
-print(f"? Trimmed down to {len(recent_df)} rows across {recent_df['Ticker'].nunique()} tickers.")
-print(f"?? Saved as {output}")
+print(f"✅ Trimmed down to {len(recent_df)} rows across {recent_df['Ticker'].nunique()} tickers.")
+print(f"💾 Saved as {output}")
 
