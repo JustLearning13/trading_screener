@@ -30,3 +30,5 @@ obj/
 *.csv
 /trading_srceener_project/utils/get_recent_price_history.py
 /trading_srceener_project/config.py
+/trading_srceener_project/data/top_industry_50MA.jpeg
+/trading_srceener_project/data/top_sector_50MA.jpeg
