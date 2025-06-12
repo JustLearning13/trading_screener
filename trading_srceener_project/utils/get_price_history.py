@@ -27,7 +27,7 @@ def load_existing_history(filepath):
 # Fetch historical data incrementally
 def fetch_ticker_history(ticker, start_date):
     try:
-        data = yf.Ticker(ticker).history(start=start_date, end=datetime.today().strftime('%Y-%m-%d'))
+        data = yf.Ticker(ticker).history(start=start_date, end=(datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d'))
         if data.empty:
             return None
         data.reset_index(inplace=True)
@@ -69,8 +69,12 @@ if __name__ == "__main__":
             time.sleep(SLEEP_BETWEEN_CALLS)
 
     # Final save
+    # Final save (safe concat with non-empty chunks)
     if updated_data:
-        pd.concat([existing_data] + updated_data).drop_duplicates(subset=["Ticker", "Date"]).to_csv(OUTPUT_FILE, index=False)
+        valid_chunks = [df for df in updated_data if not df.dropna(how="all").empty]
+        if valid_chunks:
+            combined = pd.concat([existing_data] + valid_chunks)
+            combined.drop_duplicates(subset=["Ticker", "Date"]).to_csv(OUTPUT_FILE, index=False)
 
     # Handle exceptions
     if exceptions:

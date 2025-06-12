@@ -5,7 +5,7 @@
     <ProjectGuid>a684f86d-4e96-45cd-8912-e8d8a437ebc9</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>testing.py</StartupFile>
+    <StartupFile>utils\get_price_history.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,6 +22,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="calculate_ma.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="calculate_sector_industry_returns.py">
       <SubType>Code</SubType>
     </Compile>
@@ -31,9 +34,6 @@
     <Compile Include="filters\breakout_scanner.py" />
     <Compile Include="filters\precompute_metrics.py" />
     <Compile Include="testing.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="utils\get_recent_price_history.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="utils\plot_top_trending_sectors.py">
