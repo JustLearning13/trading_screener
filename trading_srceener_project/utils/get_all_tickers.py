@@ -112,6 +112,11 @@ if __name__ == "__main__":
         (full_df["VolumeAvg"] >= MIN_VOLUME)
     ]
 
+    # Clean Ticker column before saving
+    clean_df = clean_df.dropna(subset=["Ticker"])
+    clean_df["Ticker"] = clean_df["Ticker"].astype(str).str.strip()
+    clean_df = clean_df[clean_df["Ticker"] != ""]
+
     # Step 5: Save results
     clean_df.to_csv(OUTPUT_FILE, index=False)
 

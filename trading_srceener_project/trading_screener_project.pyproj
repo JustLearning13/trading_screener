@@ -5,7 +5,7 @@
     <ProjectGuid>a684f86d-4e96-45cd-8912-e8d8a437ebc9</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>utils\get_price_history.py</StartupFile>
+    <StartupFile>testing.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

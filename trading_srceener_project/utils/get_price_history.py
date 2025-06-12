@@ -1,103 +1,85 @@
-﻿
-import os
+﻿import os
 import time
 import pandas as pd
 import yfinance as yf
 from tqdm import tqdm
 from datetime import datetime, timedelta
-from pandas.tseries.offsets import DateOffset
+from tqdm import tqdm
 
-from config.config import HISTORICAL_PERIOD
-from config.config import SLEEP_BETWEEN_CALLS
-
-# ------------------------ CONFIGURATION ------------------------
+# CONFIGURATION
 INPUT_CSV = "data/all_tickers.csv"
 OUTPUT_FILE = "data/price_history.csv"
-SAVE_EVERY_N = 100
-INACTIVITY_THRESHOLD_DAYS = 10
-# ---------------------------------------------------------------
+EXCEPTIONS_FILE = "data/price_history_exceptions.csv"
+from config.config import HISTORICAL_PERIOD_DAYS
+from config.config import SLEEP_BETWEEN_CALLS
+from config.config import BATCH_SAVE_SIZE 
 
-def load_price_history():
-    if os.path.exists(OUTPUT_FILE):
-        df = pd.read_csv(OUTPUT_FILE, parse_dates=["Date"])
+# Ensure data directory exists
+os.makedirs("data", exist_ok=True)
+
+# Load existing data if present
+def load_existing_history(filepath):
+    if os.path.exists(filepath):
+        df = pd.read_csv(filepath, parse_dates=["Date"])
         return df
     return pd.DataFrame(columns=["Date", "Open", "High", "Low", "Close", "Volume", "Ticker"])
 
-def fetch_missing_history(ticker, start_date):
+# Fetch historical data incrementally
+def fetch_ticker_history(ticker, start_date):
     try:
-        t = yf.Ticker(ticker)
-        end_date = datetime.today().strftime("%Y-%m-%d")
-        hist = t.history(start=start_date.strftime("%Y-%m-%d"), end=end_date, interval="1d")
-        if hist.empty:
+        data = yf.Ticker(ticker).history(start=start_date, end=datetime.today().strftime('%Y-%m-%d'))
+        if data.empty:
             return None
-        hist = hist[["Open", "High", "Low", "Close", "Volume"]].copy()
-        hist["Ticker"] = ticker
-        return hist.reset_index()
+        data.reset_index(inplace=True)
+        data["Ticker"] = ticker
+        data = data[["Date", "Open", "High", "Low", "Close", "Volume", "Ticker"]]
+        return data
     except Exception as e:
-        print(f"⚠️ {ticker} failed: {e}")
+        print(f"⚠️ Error fetching {ticker}: {e}")
         return None
 
-def save_chunk(data_chunk, append=True):
-    mode = 'a' if append and os.path.exists(OUTPUT_FILE) else 'w'
-    header = not os.path.exists(OUTPUT_FILE) or not append
-    data_chunk.to_csv(OUTPUT_FILE, mode=mode, header=header, index=False)
-
-def main():
-    os.makedirs("data", exist_ok=True)
-
-    all_tickers = pd.read_csv(INPUT_CSV)["Ticker"].dropna().unique()
-    existing_data = load_price_history()
-
-    if not existing_data.empty:
-        last_dates = existing_data.groupby("Ticker")["Date"].max().to_dict()
-    else:
-        last_dates = {}
-
-    tickers_to_update = []
-    today = datetime.today()
-
-    for ticker in all_tickers:
-        last_seen = last_dates.get(ticker)
-        if last_seen is None:
-            tickers_to_update.append(ticker)
-        elif (today - last_seen).days <= INACTIVITY_THRESHOLD_DAYS:
-            tickers_to_update.append(ticker)
-
-    print(f"📊 Total tickers to process: {len(tickers_to_update)} (skipped inactive)")
-
-    temp_chunk = []
-
-    for i, ticker in enumerate(tqdm(tickers_to_update, desc="Updating history")):
-        if ticker in last_dates:
-            last_date = last_dates[ticker] + timedelta(days=1)
-        else:
-            # Determine starting point based on HISTORICAL_PERIOD format
-            if HISTORICAL_PERIOD.endswith("y"):
-                years = int(HISTORICAL_PERIOD[:-1])
-                last_date = today - DateOffset(years=years)
-            elif HISTORICAL_PERIOD.endswith("d"):
-                days = int(HISTORICAL_PERIOD[:-1])
-                last_date = today - timedelta(days=days)
-            else:
-                raise ValueError("Unsupported HISTORICAL_PERIOD. Use '1y' or '90d' format.")
-
-        new_data = fetch_missing_history(ticker, last_date)
-
-        if new_data is not None and not new_data.empty:
-            temp_chunk.append(new_data)
-
-        time.sleep(SLEEP_BETWEEN_CALLS)
-
-        if (i + 1) % SAVE_EVERY_N == 0 and temp_chunk:
-            combined = pd.concat(temp_chunk)
-            save_chunk(combined)
-            temp_chunk.clear()
-
-    if temp_chunk:
-        combined = pd.concat(temp_chunk)
-        save_chunk(combined)
-
-    print(f"✅ Done at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}! Updated {OUTPUT_FILE}")
-
+# MAIN PROCESS
 if __name__ == "__main__":
-    main()
+    tickers = pd.read_csv(INPUT_CSV)["Ticker"].unique()
+    existing_data = load_existing_history(OUTPUT_FILE)
+    exceptions = []
+
+    # Determine last date per ticker
+    last_dates = existing_data.groupby("Ticker")["Date"].max().to_dict()
+    updated_data = []
+
+    for i, ticker in enumerate(tqdm(tickers, desc="Fetching Price History")):
+        if ticker in last_dates:
+            start_date = last_dates[ticker] + timedelta(days=1)
+        else:
+            start_date = datetime.today() - timedelta(days=HISTORICAL_PERIOD_DAYS)
+
+        fetched_data = fetch_ticker_history(ticker, start_date.strftime('%Y-%m-%d'))
+
+        if fetched_data is not None and not fetched_data.empty:
+            updated_data.append(fetched_data)
+        else:
+            exceptions.append(ticker)
+
+        # Periodically save progress
+        if (i + 1) % BATCH_SAVE_SIZE == 0:
+            if updated_data:
+                pd.concat([existing_data] + updated_data).drop_duplicates(subset=["Ticker", "Date"]).to_csv(OUTPUT_FILE, index=False)
+                updated_data = []
+            time.sleep(SLEEP_BETWEEN_CALLS)
+
+    # Final save
+    if updated_data:
+        pd.concat([existing_data] + updated_data).drop_duplicates(subset=["Ticker", "Date"]).to_csv(OUTPUT_FILE, index=False)
+
+    # Handle exceptions
+    if exceptions:
+        # Remove exceptions from main history
+        final_data = pd.read_csv(OUTPUT_FILE)
+        exceptions_data = final_data[final_data["Ticker"].isin(exceptions)]
+        final_data = final_data[~final_data["Ticker"].isin(exceptions)]
+
+        final_data.to_csv(OUTPUT_FILE, index=False)
+        exceptions_data.to_csv(EXCEPTIONS_FILE, index=False)
+
+    print(f"✅ Completed fetching. Exceptions moved to '{EXCEPTIONS_FILE}'.")
